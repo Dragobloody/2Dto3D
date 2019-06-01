@@ -2,7 +2,6 @@ import numpy as np
 import torch
 import math
 
-
 fovy = 0.5 
 far, near = 1500, 250
  
@@ -14,13 +13,13 @@ left = -top
 
 def rotationMatrix(theta_x, theta_y, theta_z):
     x = torch.Tensor([(1, 0, 0),
-                        (0, np.cos(np.deg2rad(theta_x)), -np.sin(np.deg2rad(theta_x))),
-                        (0, np.sin(np.deg2rad(theta_x)), np.cos(np.deg2rad(theta_x)))])    
-    y = torch.Tensor([(np.cos(np.deg2rad(theta_y)), 0, np.sin(np.deg2rad(theta_y))),
+                        (0, torch.cos((theta_x*np.pi)/180), -torch.sin((theta_x*np.pi)/180)),
+                        (0, torch.sin((theta_x*np.pi)/180), torch.cos((theta_x*np.pi)/180))])    
+    y = torch.Tensor([(torch.cos((theta_y*np.pi)/180), 0, torch.sin((theta_y*np.pi)/180)),
                         (0, 1, 0),
-                        (-np.sin(np.deg2rad(theta_y)), 0, np.cos(np.deg2rad(theta_y)))])    
-    z = torch.Tensor([(np.cos(np.deg2rad(theta_z)), -np.sin(np.deg2rad(theta_z)), 0),
-                        (np.sin(np.deg2rad(theta_z)), np.cos(np.deg2rad(theta_z)), 0),
+                        (-torch.sin((theta_y*np.pi)/180), 0, torch.cos((theta_y*np.pi)/180))])    
+    z = torch.Tensor([(torch.cos((theta_z*np.pi)/180), -torch.sin((theta_z*np.pi)/180), 0),
+                        (torch.sin((theta_z*np.pi)/180), torch.cos((theta_z*np.pi)/180), 0),
                         (0, 0, 1)])    
     return z @ y @ x
 

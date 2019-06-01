@@ -97,8 +97,7 @@ if __name__ == '__main__':
     
     # Project pointcloud    
     thetas = torch.Tensor([0,10,0])
-    trans = torch.Tensor([0,0,-400])    
-    
+    trans = torch.Tensor([0,0,-400])        
     proj = projection3Dto2D(G, thetas, trans)    
             
     f = open('Landmarks68_model2017-1_face12_nomouth.anl','r')
