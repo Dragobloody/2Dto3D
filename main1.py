@@ -16,7 +16,6 @@ face_mean_tex = np.asarray(bfm['color/model/mean'], dtype=np.float32).reshape((-
 face_pcaBasis = np.asarray(bfm['color/model/pcaBasis'], dtype=np.float32).reshape((-1, 3, 199))
 face_pcaVariance = np.asarray(bfm['color/model/pcaVariance'], dtype=np.float32)
 
-
 # Expression Identity
 exp_mean_shape = np.asarray(bfm['expression/model/mean'], dtype=np.float32).reshape((-1, 3))
 exp_pcaBasis = np.asarray(bfm['expression/model/pcaBasis'], dtype=np.float32).reshape((-1, 3, 100))
@@ -27,7 +26,6 @@ face_triangles = np.asarray(bfm['shape/representer/cells'], dtype=np.int32).T
 color_mean = np.asarray(bfm['color/model/mean'], dtype=np.float32).reshape((-1, 3))
 
 print('shape of Stuff:')
-
 print('face_pcaBasis:', face_pcaBasis.shape)
 print('face_pcaVariance:', face_pcaVariance.shape)
 print('exp_pcaBasis:', exp_pcaBasis.shape)
@@ -59,7 +57,6 @@ def mesh_to_png(file_name, mesh):
         vertices=mesh.vertices,
         faces=mesh.triangles,
         vertex_colors=mesh.colors)
-
     png = mesh.scene().save_image()
     with open(file_name, 'wb') as f:
         f.write(png)
