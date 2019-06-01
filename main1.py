@@ -5,6 +5,9 @@ import pyrender
 import h5py
 import torch
 from data_def import PCAModel, Mesh
+from PIL import Image
+import io
+import numpy as np
 
 bfm = h5py.File("model2017-1_face12_nomouth.h5", 'r')
 N_face = 30
@@ -52,18 +55,62 @@ G_id = model_id.mean + E_id
 G_exp = model_exp.mean + E_exp
 G = G_id + G_exp
 
+
+
+def rotationMatrixY(theta_y):
+    R_y = np.zeros((3,3))
+    R_y[1,1] = 1
+    s = np.sin(np.deg2rad(theta_y))
+    c = np.cos(np.deg2rad(theta_y))
+    R_y[0,0] = R_y[2,2] = c
+    R_y[0,2] = s
+    R_y[2,0] = -s
+    
+    return R_y
+
+def transformMatrix(pointcloud, R_y):
+    T = np.zeros((4,4))
+    T[3,3] = 1
+    T[0:3,0:3] = R_y
+    
+
 def mesh_to_png(file_name, mesh):
     mesh = trimesh.base.Trimesh(
         vertices=mesh.vertices,
         faces=mesh.triangles,
         vertex_colors=mesh.colors)
-    png = mesh.scene().save_image()
+   
+    scene = mesh.scene()
+    png = scene.save_image(visible = True)
     with open(file_name, 'wb') as f:
         f.write(png)
-
+    #scene = mesh.scene()
+    #aux = trimesh.viewer.notebook.scene_to_html(scene)
 
 if __name__ == '__main__':
     #raise ValueError
     print('shape of face_triangles: ', face_triangles.shape)
     mesh = Mesh(G, color_mean, face_triangles)
-    mesh_to_png("sample8.png", mesh)
+    mesh_to_png("sample.png", mesh)    
+    
+    pointcloud = np.array(G)
+    b = np.ones((pointcloud.shape[0],4))
+    b[:,:-1] = pointcloud
+    pointcloud = b
+    
+    
+    theta_y = 10
+    R_y = rotationMatrixY(theta_y)
+    T = transformMatrix(pointcloud, R_y)
+    rotated_pointcloud = np.matmul(T, pointcloud.T).T[:,:-1] 
+    
+    mesh = Mesh(rotated_pointcloud, color_mean, face_triangles)
+    mesh_to_png("sample_rotated.png", mesh) 
+
+    
+    
+    
+    
+    
+    
+    
