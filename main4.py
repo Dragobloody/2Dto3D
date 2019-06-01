@@ -76,9 +76,9 @@ t = Variable(torch.zeros(3, ), requires_grad=True)
 
 lambda_alpha = 1000.0
 lambda_delta = 1000.0
-optimizer = torch.optim.Adam([alpha, delta, w, t], lr=0.001, )
+optimizer = torch.optim.Adam([alpha, delta, w, t], lr=0.05)
 loss_list = []
-max_iter = 2
+max_iter = 100000
 for i in range(max_iter):
 
     # Calculate
@@ -95,4 +95,7 @@ for i in range(max_iter):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    print(f'Loss at iteration {i}: {loss}')
+    if i % 1000 == 0:
+        print(f'Loss at iteration {i}: {loss}')
+
+
