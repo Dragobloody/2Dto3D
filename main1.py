@@ -9,10 +9,14 @@ from PIL import Image
 import io
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+from projection_3d_to_2d import *
 
 bfm = h5py.File("model2017-1_face12_nomouth.h5", 'r')
 N_face = 30
 N_exp = 20
+
+
 
 # Facial Identity
 face_mean_shape = np.asarray(bfm['shape/model/mean'], dtype=np.float32).reshape((-1, 3))
@@ -56,56 +60,7 @@ G_id = model_id.mean + E_id
 G_exp = model_exp.mean + E_exp
 G = G_id + G_exp
 
-
-
-def rotationMatrixY(theta_y):
-    R_y = np.zeros((3,3))
-    R_y[1,1] = 1
-    s = np.sin(np.deg2rad(theta_y))
-    c = np.cos(np.deg2rad(theta_y))
-    R_y[0,0] = R_y[2,2] = c
-    R_y[0,2] = s
-    R_y[2,0] = -s
-    
-    return R_y
-
-def transformMatrix(pointcloud, R_y):
-    T = np.zeros((4,4))
-    T[3,3] = 1
-    T[2,3] = -400
-    T[0:3,0:3] = R_y    
-    return T
-
-
-def perspectiveProjectionMatrix(l,r,b,t,n,f):    
-    P = np.zeros((4,4))
-    P[3,2] = -1
-    P[0,0] = 2*n/(r-l)
-    P[1,1] = 2*n/(t-b)
-    P[2,2] = - (f+n)/(f-n)
-    P[0,2] = (r+l)/(r-l)
-    P[1,2] = (t+b)/(t-b)
-    P[2,3] = - 2*f*n/(f-n)
-    return P
-
-def viewportMatrix(l,r,b,t):
-    V = np.zeros((4,4))
-    V[3,3] = 1
-    V[2,2] = V[2,3] = 1/2
-    V[0,0] = (r-l)/2
-    V[1,1] = (t-b)/2
-    V[0,3] = (r+l)/2
-    V[1,3] = (t+b)/2
-    return V
-
-def projection3Dto2D(pointcloud, T, P, V):
-    proj = np.matmul(np.matmul(V,P), T)
-    proj = np.matmul(proj, pointcloud.T).T
-    proj = proj/(proj[:,-1]).reshape((proj.shape[0],1))
-    return proj
-    
-    
-    
+ 
 
 def mesh_to_png(file_name, mesh):
     mesh = trimesh.base.Trimesh(
@@ -126,31 +81,25 @@ if __name__ == '__main__':
     mesh = Mesh(G, color_mean, face_triangles)
     mesh_to_png("sample.png", mesh)  
     
-    # Rotate pointcloud    
-    pointcloud = np.array(G)
-    b = np.ones((pointcloud.shape[0],4))
-    b[:,:-1] = pointcloud
-    pointcloud = b    
-    
-    theta_y = 10
-    R_y = rotationMatrixY(theta_y)
-    T = transformMatrix(pointcloud, R_y)
-    rotated_pointcloud = np.matmul(T, pointcloud.T).T[:,:-1] 
+    # Rotate pointcloud  
+    pointcloud = G
+    last_col = torch.ones((pointcloud.shape[0],1))
+    pointcloud = torch.cat((pointcloud, last_col), 1)
+       
+    thetas = torch.Tensor([0,10,0])
+    trans = torch.Tensor([0,0,0])
+    T = transformMatrix(thetas, trans)
+    rotated_pointcloud = (T @ pointcloud.t()).t()[:,:-1] 
     
     mesh = Mesh(rotated_pointcloud, color_mean, face_triangles)
     mesh_to_png("sample_rotated.png", mesh) 
     
     
     # Project pointcloud    
-    theta_y = 10
-    R_y = rotationMatrixY(theta_y)
-    T = transformMatrix(pointcloud, R_y)
+    thetas = torch.Tensor([0,10,0])
+    trans = torch.Tensor([0,0,-400])    
     
-    l,r,b,t,n,f = 0,400,0,400,100,1000
-    P = perspectiveProjectionMatrix(l,r,b,t,n,f)
-    l,r,b,t = 0,400,0,400
-    V = viewportMatrix(l,r,b,t)    
-    proj = projection3Dto2D(pointcloud, T, P, V)    
+    proj = projection3Dto2D(G, thetas, trans)    
             
     f = open('Landmarks68_model2017-1_face12_nomouth.anl','r')
     lineList = f.readlines()
