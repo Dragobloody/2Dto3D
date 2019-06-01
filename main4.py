@@ -7,7 +7,7 @@ import cv2
 from torch.autograd import Variable
 from main1 import *
 import numpy as np
-
+from projection_3d_to_2d import *
 
 def shape_to_np(shape, dtype="int"):
     # initialize the list of (x, y)-coordinates
@@ -38,10 +38,9 @@ def get_ground_truth(image_path, predictor_path):
         # Get the landmarks/parts for the face in box d.
         shape = predictor(img, d)
         landmark_coords = shape_to_np(shape)
-        for (x,y) in landmark_coords:
-            print(f'({x}, {y})')
 
-    return landmark_coords
+    ground_truth = torch.Tensor(landmark_coords)
+    return ground_truth
 
 
 def get_landmarks(landmarks_idx_file):
@@ -72,14 +71,14 @@ model_id, model_exp = get_landmarks('Landmarks68_model2017-1_face12_nomouth.anl'
 
 alpha = Variable(torch.zeros(N_face, ), requires_grad=True)
 delta = Variable(torch.zeros(N_exp, ), requires_grad=True)
-omega = Variable(torch.zeros(3, ), requires_grad=True)
+w = Variable(torch.zeros(3, ), requires_grad=True)
 t = Variable(torch.zeros(3, ), requires_grad=True)
 
 lambda_alpha = 1000.0
 lambda_delta = 1000.0
-#optimizer = torch.optim.Adam()
-
-max_iter = 100
+optimizer = torch.optim.Adam([alpha, delta, w, t], lr=0.001, )
+loss_list = []
+max_iter = 2
 for i in range(max_iter):
 
     # Calculate
@@ -88,15 +87,12 @@ for i in range(max_iter):
     G_id = model_id.mean + E_id
     G_exp = model_exp.mean + E_exp
     G = G_id + G_exp
-    print(G.shape)
-    raise  ValueError
-    R_y = rotationMatrixY(theta_y)
-    T = transformMatrix(pointcloud, R_y)
-    rotated_pointcloud = np.matmul(T, pointcloud.T).T[:,:-1]
 
-    landmarks = TransformFromG() #None
+    landmarks = projection3Dto2D(G, w, t)
 
     loss = L_lan(landmarks, ground_truth) + L_reg(alpha, delta, lambda_alpha, lambda_delta)
+    loss_list.append(loss)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
+    print(f'Loss at iteration {i}: {loss}')
