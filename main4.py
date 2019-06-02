@@ -8,6 +8,7 @@ from torch.autograd import Variable
 from main1 import *
 import numpy as np
 from projection_3d_to_2d import *
+import matplotlib.pyplot as plt
 
 def shape_to_np(shape, dtype="int"):
     # initialize the list of (x, y)-coordinates
@@ -67,18 +68,22 @@ def L_reg(alpha, delta, lambda_alpha, lambda_delta):
 
 
 ground_truth = get_ground_truth('images4/dragos.jpg', 'shape_predictor_68_face_landmarks.dat')
+ground_truth[:,0]=ground_truth[:,0]-200.0
+ground_truth[:,1]=ground_truth[:,1]-200.0
 model_id, model_exp = get_landmarks('Landmarks68_model2017-1_face12_nomouth.anl')
 
 alpha = Variable(torch.zeros(N_face, ), requires_grad=True)
 delta = Variable(torch.zeros(N_exp, ), requires_grad=True)
-w = Variable(torch.zeros(3, ), requires_grad=True)
-t = Variable(torch.zeros(3, ), requires_grad=True)
-
+#w = Variable(torch.Tensor([0,0,0]), requires_grad=True)
+w = Variable(torch.zeros((3, )), requires_grad=True)
+#t = Variable(torch.ones(3, )*100, requires_grad=True)
+t = Variable(torch.Tensor([0.0, 0.0, 100.0]), requires_grad=True)
 lambda_alpha = 1000.0
 lambda_delta = 1000.0
-optimizer = torch.optim.Adam([alpha, delta, w, t], lr=0.05)
+optimizer = torch.optim.Adam([alpha, delta, w, t], lr=0.01)
 loss_list = []
-max_iter = 100000
+max_iter = 10000
+
 for i in range(max_iter):
 
     # Calculate
@@ -89,13 +94,16 @@ for i in range(max_iter):
     G = G_id + G_exp
 
     landmarks = projection3Dto2D(G, w, t)
-
     loss = L_lan(landmarks, ground_truth) + L_reg(alpha, delta, lambda_alpha, lambda_delta)
     loss_list.append(loss)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
     if i % 1000 == 0:
-        print(f'Loss at iteration {i}: {loss}')
+        #print(f'alpha: {alpha}, delta: {delta}, w: {w}, t: {t}')
+        print(f'Loss at iteration {i}: {loss}; '
+              f'L_reg={L_reg(alpha, delta, lambda_alpha, lambda_delta)} L_lan={L_lan(landmarks, ground_truth)}')
 
-
+plt.scatter(landmarks.detach().numpy()[:, 0], -landmarks.detach().numpy()[:,1])
+plt.scatter(ground_truth.numpy()[:, 0], -ground_truth.numpy()[:, 1])
+plt.show()
